@@ -1,0 +1,8 @@
+.vscode
+env
+venv
+pyenv
+pyvenv
+
+faqStore_*
+latest_model*
