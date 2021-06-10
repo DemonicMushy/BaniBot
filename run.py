@@ -3,14 +3,15 @@ from typing import List, Tuple, Dict
 
 from Bani.Bani import Bani
 from Bani.core.FAQ import FAQ
-from Bani.core.generation import GenerateManager
+# from Bani.core.generation import GenerateManager
 from Bani.core.defaults import defaultGenerateManager
 
-from Bani.generation.rajat_work.qgen.generator.symsub import SymSubGenerator
-from Bani.generation.rajat_work.qgen.generator.fpm.fpm import FPMGenerator
-from Bani.generation.rajat_work.qgen.encoder.dummy import dummyEN
-from Bani.generation.rajat_work.qgen.generator.eda import EDAGenerator
-from Bani.generation.sentAug.sentAug import AUG
+# from Bani.generation.rajat_work.qgen.generator.symsub import SymSubGenerator
+# from Bani.generation.rajat_work.qgen.generator.fpm.fpm import FPMGenerator
+# from Bani.generation.rajat_work.qgen.encoder.dummy import dummyEN
+# from Bani.generation.rajat_work.qgen.generator.eda import EDAGenerator
+# from Bani.generation.sentAug.sentAug import AUG
+# from Bani.generation.t5_paraphrase_gen.t5_paraphrase import T5Generator
 
 from datetime import datetime
 
@@ -33,19 +34,20 @@ def makeFAQ(targetDir_faqStore):
     Currently, takes in data hardcoded within this function. (Adoption, Babybonus, Comcare, Covid19)
     Generates permutations using Bani, and saves the faqStore to targetDir_faqStore
     """
-    names = ["SymSub", "FPM", "EDA", "nlpAug"]
-    quantity = [3, 3, 3, 2]
+    # names = ["SymSub", "FPM", "EDA", "nlpAug", "T5"]
+    # quantity = [3, 3, 3, 2, 3]
 
-    generatorManager = GenerateManager(
-        producers=[
-            SymSubGenerator(dummyEN("lite")),
-            FPMGenerator(),
-            EDAGenerator(),
-            AUG(),
-        ],
-        names=names,
-        nums=quantity,
-    )
+    # generatorManager = GenerateManager(
+    #     producers=[
+    #         SymSubGenerator(dummyEN("lite")),
+    #         FPMGenerator(),
+    #         EDAGenerator(),
+    #         AUG(),
+    #         T5Generator(),
+    #     ],
+    #     names=names,
+    #     nums=quantity,
+    # )
 
     questions1, answers1 = csvReader("./data/adoption/adoption-copy.csv")
     questions2, answers2 = csvReader("./data/babybonus/babybonus-copy.csv")
@@ -57,10 +59,15 @@ def makeFAQ(targetDir_faqStore):
     comcareFAQ = FAQ(name="ComCare", questions=questions3, answers=answers3)
     covid19FAQ = FAQ(name="Covid 19", questions=questions4, answers=answers4)
 
-    adoptionFAQ.buildFAQ(generatorManager)
-    babybonusFAQ.buildFAQ(generatorManager)
-    comcareFAQ.buildFAQ(generatorManager)
-    covid19FAQ.buildFAQ(generatorManager)
+    # adoptionFAQ.buildFAQ(generatorManager)
+    # babybonusFAQ.buildFAQ(generatorManager)
+    # comcareFAQ.buildFAQ(generatorManager)
+    # covid19FAQ.buildFAQ(generatorManager)
+    
+    adoptionFAQ.buildFAQ(defaultGenerateManager)
+    babybonusFAQ.buildFAQ(defaultGenerateManager)
+    comcareFAQ.buildFAQ(defaultGenerateManager)
+    covid19FAQ.buildFAQ(defaultGenerateManager)
 
     adoptionFAQ.save(targetDir_faqStore)
     babybonusFAQ.save(targetDir_faqStore)
@@ -123,7 +130,7 @@ modelPath = "./test_model"
 
 ########## To make faqStore from question answer csv data ((un)comment as necessary)
 
-# makeFAQ(faqStore)
+makeFAQ(faqStore)
 
 ########## To train the model ((un)comment as necessary)
 
