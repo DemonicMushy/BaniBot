@@ -12,19 +12,7 @@ from Bani.generation.rajat_work.qgen.encoder.dummy import dummyEN
 from Bani.generation.rajat_work.qgen.generator.eda import EDAGenerator
 from Bani.generation.sentAug.sentAug import AUG
 
-df = pd.read_csv("./test_data/babybonusTest.csv")
-
-testData = []
-global adoptionFAQ
-global babybonusFAQ
-global comcareFAQ
-global covid19FAQ
-faqStore = './faqStore_test'
-
-for i in range(len(df)):
-    original = df.loc[i, "original"]
-    re = df.loc[i, "reframed"]
-    testData.append([original, re])
+from datetime import datetime
 
 
 def csvReader(path):
@@ -40,8 +28,11 @@ def csvReader(path):
     return questions, answers
 
 
-def makeFAQ():
-    global faqStore
+def makeFAQ(targetDir_faqStore):
+    """
+    Currently, takes in data hardcoded within this function. (Adoption, Babybonus, Comcare, Covid19)
+    Generates permutations using Bani, and saves the faqStore to targetDir_faqStore
+    """
     names = ["SymSub", "FPM", "EDA", "nlpAug"]
     quantity = [3, 3, 3, 2]
 
@@ -71,50 +62,111 @@ def makeFAQ():
     comcareFAQ.buildFAQ(generatorManager)
     covid19FAQ.buildFAQ(generatorManager)
 
-    adoptionFAQ.save(faqStore)
-    babybonusFAQ.save(faqStore)
-    comcareFAQ.save(faqStore)
-    covid19FAQ.save(faqStore)
+    adoptionFAQ.save(targetDir_faqStore)
+    babybonusFAQ.save(targetDir_faqStore)
+    comcareFAQ.save(targetDir_faqStore)
+    covid19FAQ.save(targetDir_faqStore)
 
 
-def loadFAQ():
-    global adoptionFAQ
-    global babybonusFAQ
-    global comcareFAQ
-    global covid19FAQ
-    global faqStore
-    
+def loadFAQ(targetDir_faqStore):
+    """
+    Takes in directory of faqStore
+    Currently, hardcoded to use the 4 topics (Adoption, BabyBonus, ComCare, Covid19)
+    Creates FAQ objects, loads data into FAQ objects from the targetDir_faqStore
+    Returns the list of FAQ objects
+    """
+
     adoptionFAQ = FAQ(name="Adoption")
     babybonusFAQ = FAQ(name="Baby Bonus")
     comcareFAQ = FAQ(name="ComCare")
     covid19FAQ = FAQ(name="Covid 19")
 
-    adoptionFAQ.load(faqStore)
-    babybonusFAQ.load(faqStore)
-    comcareFAQ.load(faqStore)
-    covid19FAQ.load(faqStore)
+    adoptionFAQ.load(targetDir_faqStore)
+    babybonusFAQ.load(targetDir_faqStore)
+    comcareFAQ.load(targetDir_faqStore)
+    covid19FAQ.load(targetDir_faqStore)
+
+    return [adoptionFAQ, babybonusFAQ, comcareFAQ, covid19FAQ]
 
 
-# makeFAQ()
-loadFAQ()
+def trainModel(FAQ_list, targetDir_model):
+    """
+    Takes in list of FAQ objects and directory to where model is to be stored.
+    Trains the model and saves it to the target directory.
+    """
+    bot = Bani(FAQs=FAQ_list, modelPath=None)
+    
+    starttime = datetime.now()
+    current_time = starttime.strftime("%H:%M:%S")
+    print("Start Time =", current_time)
+
+    # "batchHardTriplet", "contrastiveLoss", "tripletLoss", "softmaxLayerLoss"
+    bot.train(targetDir_model, epochs=5, batchSize=64, lossName="batchHardTriplet")
+    bot.saveModel(targetDir_model)
+
+    print("Model has been saved to ", targetDir_model)
+
+    endtime = datetime.now()
+    current_time = endtime.strftime("%H:%M:%S")
+    print("End Time =", current_time)
+    duration = endtime - starttime
+    print("Duration =", duration)
+
+
+
+########## Filenames that need to be changed as needed
+
+faqStore = "./test_faqStore"
+modelPath = "./test_model"
+
+##########
+
+########## To make faqStore from question answer csv data ((un)comment as necessary)
+
+# makeFAQ(faqStore)
+
+########## To train the model ((un)comment as necessary)
+
+loaded_FAQs = loadFAQ(faqStore)
+trainModel(loaded_FAQs, modelPath)
+
+##########
+
+########## To load Bani with FAQStore and trained model (to be run after making FAQ, and after training model)
+
+loaded_FAQs = loadFAQ(faqStore)
 
 bot = Bani(
-    FAQs=[adoptionFAQ, babybonusFAQ, comcareFAQ, covid19FAQ],
-    modelPath="./latest_model3",
+    FAQs=loaded_FAQs,
+    modelPath=modelPath,
 )
 
+##########
 
-# "batchHardTriplet", "contrastiveLoss", "tripletLoss", "softmaxLayerLoss"
-# bot.train("./", epochs=5, batchSize=64, lossName="batchHardTriplet")
+########## Testing model with test data ((un)comment as necessary) (Be sure to load Bani first)
 
-# bot.saveModel("./latest_model3")
+# read Test data from csv to determine accuracy later
 
+df = pd.read_csv("./test_data/babybonusTest.csv")
+testData = []
+
+for i in range(len(df)):
+    original = df.loc[i, "original"]
+    re = df.loc[i, "reframed"]
+    testData.append([original, re])
 
 acc = bot.test(1, testData, i)
-print(acc)
+print("Accuracy using Bani's test method:", acc)
 
+print("")
+
+print("Answering: 'How is the weather today'")
 ans = bot.findClosest("how is the weather today")
 
 for i in range(4):
-    print(ans[i].maxScore)
-    print(ans[i].score)
+    print("FAQ Name:\t", ans[i].faqName)
+    print("FAQ ID:\t\t", ans[i].faqId)
+    print("Max score:\t", ans[i].maxScore)
+    print("Score:\t\t", ans[i].score)
+
+##########
